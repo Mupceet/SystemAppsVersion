@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ATool</string>
-    <string name="change_language_to_en">切换系统语言</string>
+    <string name="change_language_to_en">切换系统语言为英语</string>
     <string name="getAppsVersionInfo">获取系统APP版本信息</string>
     <string name="use_steps">
         \n请遵循以下步骤：\n\n
-        1.切换语言为英文\n\n
+        1.切换语言为英语\n\n
         2.获取系统App版本信息\n\n
-        3.到目录下导出CSV文件\n\n
+        3.到Download目录下导出CSV文件\n\n
     </string>
     <string name="version_info">软件APK版本信息</string>
+    <string name="export_succeed">结果已导出到Download目录下</string>
+    <string name="export_lack_permission">无SD卡写入权限，导出失败！</string>
+    <string name="export_failed">发生未知错误！</string>
 
 </resources>

@@ -12,14 +12,10 @@
 
 package com.tplink.lgz.atool;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.os.Trace;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 
 import com.blankj.utilcode.utils.AppUtils;
 
@@ -65,7 +61,7 @@ public class AppInfoUtils {
 
     /**
      * 获取所有系统预装应用，包含名称和版本信息
-     *
+     * <p>
      * {@link #getAllAppsInfo(Context)}
      * {@link #getSystemAppsPackageName(Context)}
      * 依赖于以上两个方法。
@@ -92,48 +88,5 @@ public class AppInfoUtils {
         Collections.sort(systemAppsVersion);
         return systemAppsVersion;
     }
-    public static final int PERMISSIONS_REQUEST_ALL_PERMISSIONS = 1;
-    public static boolean hasPermission(Context context, String[] permissions) {
-        Trace.beginSection("hasPermission");
-        try {
-            for (String permission : permissions) {
-                if (ContextCompat.checkSelfPermission(context, permission)
-                        != PackageManager.PERMISSION_GRANTED) {
-                    return false;
-                }
-            }
-            return true;
-        } finally {
-            Trace.endSection();
-        }
-    }
-
-    public static void requestPermission(Context context, String[] permissions) {
-        if (!(context instanceof Activity)) {
-            return;
-        }
-        Trace.beginSection("requestPermissions");
-        try {
-            // Construct a list of missing permissions
-            final ArrayList<String> unsatisfiedPermissions = new ArrayList<>();
-            for (String permission : permissions) {
-                if (ContextCompat.checkSelfPermission(context, permission)
-                        != PackageManager.PERMISSION_GRANTED) {
-                    unsatisfiedPermissions.add(permission);
-                }
-            }
-            if (unsatisfiedPermissions.size() == 0) {
-                throw new RuntimeException("Request permission activity was called even"
-                        + " though all permissions are satisfied.");
-            }
-            ActivityCompat.requestPermissions(
-                    (Activity) context,
-                    unsatisfiedPermissions.toArray(new String[unsatisfiedPermissions.size()]),
-                    PERMISSIONS_REQUEST_ALL_PERMISSIONS);
-        } finally {
-            Trace.endSection();
-        }
-    }
-
 
 }

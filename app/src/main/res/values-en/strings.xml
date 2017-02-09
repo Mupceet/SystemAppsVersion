@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ATool</string>
+    <string name="change_language_to_en">Switch language to English</string>
+    <string name="getAppsVersionInfo">Get the system apps version info</string>
+    <string name="use_steps">
+        \nPlease follow these steps:\n\n
+        1.Switch the language to English\n\n
+        2.Get the apps version information\n\n
+        3.Export the CSV file from /Download directory\n\n
+    </string>
+    <string name="version_info">软件APK版本信息</string>
+    <string name="export_succeed">The results are exported to the Download directory</string>
+    <string name="export_lack_permission">No SD card write access, export failed!</string>
+    <string name="export_failed">An unknown error occurred!</string>
+</resources>
