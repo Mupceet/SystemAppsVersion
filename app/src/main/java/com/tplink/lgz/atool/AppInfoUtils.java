@@ -17,7 +17,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 
-import com.blankj.utilcode.utils.AppUtils;
+
+import com.blankj.utilcode.util.AppUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,15 +29,6 @@ import java.util.List;
  */
 
 public class AppInfoUtils {
-    /**
-     * 获取所有已安装App信息，包括系统应用与第三方应用
-     *
-     * @param context
-     * @return 所有已安装的AppInfo列表，用到的信息有 包名/名称/是否是系统应用
-     */
-    private static List<AppUtils.AppInfo> getAllAppsInfo(Context context) {
-        return AppUtils.getAppsInfo(context);
-    }
 
     /**
      * 获取所有能从桌面启动的应用的包名。包含被禁用的组件，有可能重复，例如：com.google.android.gm
@@ -62,7 +54,6 @@ public class AppInfoUtils {
     /**
      * 获取所有系统预装应用，包含名称和版本信息
      * <p>
-     * {@link #getAllAppsInfo(Context)}
      * {@link #getSystemAppsPackageName(Context)}
      * 依赖于以上两个方法。
      *
@@ -72,11 +63,11 @@ public class AppInfoUtils {
     public static List<AppVersionMember> getAppsWithVersionInfo(Context context) {
         List<AppVersionMember> systemAppsVersion = new ArrayList<>();
         List<String> appsPackageName = getSystemAppsPackageName(context);
-        List<com.blankj.utilcode.utils.AppUtils.AppInfo> appsInfo = getAllAppsInfo(context);
+        List<AppUtils.AppInfo> appsInfo = AppUtils.getAppsInfo();
 
         for (String appName :
                 appsPackageName) {
-            for (com.blankj.utilcode.utils.AppUtils.AppInfo appInfo :
+            for (AppUtils.AppInfo appInfo :
                     appsInfo) {
                 if (appName.equals(appInfo.getPackageName()) && appInfo.isSystem()) {
                     systemAppsVersion.add(new AppVersionMember(appInfo.getName(), appInfo.getVersionName()));

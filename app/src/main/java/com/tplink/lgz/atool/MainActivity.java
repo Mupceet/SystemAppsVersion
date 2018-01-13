@@ -2,11 +2,10 @@ package com.tplink.lgz.atool;
 
 import android.Manifest;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -15,13 +14,13 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.blankj.utilcode.utils.ToastUtils;
-import com.blankj.utilcode.utils.Utils;
+import com.blankj.utilcode.util.Utils;
 import com.yanzhenjie.permission.AndPermission;
 import com.yanzhenjie.permission.PermissionListener;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 
@@ -31,12 +30,6 @@ public class MainActivity extends AppCompatActivity implements PermissionListene
     public static final String TAG = "ATool";
 
     private TextView mResult;
-    private Button mBtnGetSystemAppsInfo;
-    private Button mBtnChangeLanguage;
-    private String mResultString = null;
-    List<AppVersionMember> appVersionMemberList = null;
-    private static final int EVENT_EXPORT_SUCCED = 100;
-    private static final int EVENT_EXPORT_FAILED = 404;
 
     private static final int REQUEST_CODE_PERMISSION_SD = 1;
     private static final int REQUEST_CODE_SETTING = 300;
@@ -45,47 +38,32 @@ public class MainActivity extends AppCompatActivity implements PermissionListene
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Utils.init(this);
         initView();
+        AndPermission.with(this)
+                .requestCode(REQUEST_CODE_PERMISSION_SD)
+                .permission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                .send();
     }
-
 
 
     private void initView() {
         mResult = (TextView) findViewById(R.id.result);
         mResult.setTextSize(16);
-        mResult.setLineSpacing(8,1);
+        mResult.setLineSpacing(8, 1);
         mResult.setText(R.string.use_steps);
-        mBtnChangeLanguage = (Button) findViewById(R.id.changeLanguage);
-        mBtnChangeLanguage.setOnClickListener(new View.OnClickListener() {
+        Button btnChangeLanguage = (Button) findViewById(R.id.changeLanguage);
+        btnChangeLanguage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent =  new Intent(Settings.ACTION_LOCALE_SETTINGS);
+                Intent intent = new Intent(Settings.ACTION_LOCALE_SETTINGS);
                 startActivity(intent);
             }
         });
-        mBtnGetSystemAppsInfo = (Button) findViewById(R.id.getAppsInfo);
-        mBtnGetSystemAppsInfo.setOnClickListener(new View.OnClickListener() {
+        Button btnGetSystemAppsInfo = (Button) findViewById(R.id.getAppsInfo);
+        btnGetSystemAppsInfo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        appVersionMemberList = AppInfoUtils.getAppsWithVersionInfo(MainActivity.this);
-                        mResultString = convertAppsVersionInfoToString(appVersionMemberList);
-                        if (mResultString != null) {
-                            Message message = Message.obtain(mHandler, EVENT_EXPORT_SUCCED);
-                            mHandler.sendMessage(message);
-                            AndPermission.with(MainActivity.this)
-                                    .requestCode(REQUEST_CODE_PERMISSION_SD)
-                                    .permission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                                    .send();
-                        } else {
-                            Message message = Message.obtain(mHandler, EVENT_EXPORT_FAILED);
-                            mHandler.sendMessage(message);
-                        }
-                    }
-                }).start();
+                new ExportAsyncTask().execute();
             }
         });
     }
@@ -103,44 +81,36 @@ public class MainActivity extends AppCompatActivity implements PermissionListene
     }
 
     private void exportAppsVersionInfoToCSV(List<AppVersionMember> members) {
-        StringBuffer csvStringBuffer = new StringBuffer();
-        csvStringBuffer.append(getString(R.string.version_info) + "\r\n");
+        StringBuilder csvStringBuffer = new StringBuilder();
+        csvStringBuffer.append(getString(R.string.version_info)).append("\r\n");
         for (AppVersionMember member :
                 members) {
-            csvStringBuffer.append(member.getAppName() + ",V" + member.getAppVersionName() + "\r\n");
+            csvStringBuffer.append(member.getAppName()).append(",V")
+                    .append(member.getAppVersionName()).append("\r\n");
         }
         String csvString = csvStringBuffer.toString();
         String csvFileName = Build.MODEL + getString(R.string.version_info) + ".csv";
         File path = Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS);
-        File csvFile = new File(path, csvFileName);
         try {
-            path.mkdirs();// Make sure the directory exists.
-            OutputStream os = new FileOutputStream(csvFile);
-            byte b[] = {(byte)0xEF, (byte)0xBB, (byte)0xBF};
-            os.write(b);
-            os.write(csvString.getBytes());
-            os.close();
-        } catch (Exception e) {
+            createCSVFile(path.toString(), csvFileName, csvString);
+        } catch (IOException e) {
             e.printStackTrace();
             Log.e(TAG, "exportAppsVersionInfoToCSV: error create csv file");
         }
     }
 
-    private Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case EVENT_EXPORT_SUCCED:
-                    mResult.setText(mResultString);
-                    break;
-                case EVENT_EXPORT_FAILED:
-                    ToastUtils.showLongToastSafe(R.string.export_failed);
-                    break;
-                default:
-                    break;
-            }
+    private void createCSVFile(@NonNull String pathName, String csvFileName, String csvString)
+            throws IOException {
+        File path = new File(pathName);
+        File csvFile = new File(path, csvFileName);
+        if (path.mkdirs()) {
+            OutputStream os = new FileOutputStream(csvFile);
+            byte[] b = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
+            os.write(b);
+            os.write(csvString.getBytes());
+            os.close();
         }
-    };
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -159,21 +129,37 @@ public class MainActivity extends AppCompatActivity implements PermissionListene
 
     @Override
     public void onSucceed(int requestCode, List<String> grantPermissions) {
-        exportAppsVersionInfoToCSV(appVersionMemberList);
-        ToastUtils.showLongToastSafe(R.string.export_succeed);
+        // 请求权限成功 无需反映
+
     }
 
     @Override
     public void onFailed(int requestCode, List<String> deniedPermissions) {
-        ToastUtils.showLongToastSafe(R.string.export_lack_permission);
         // 用户勾选了不再提示并且拒绝了权限，那么提示用户到设置中授权。
         if (AndPermission.hasAlwaysDeniedPermission(this, deniedPermissions)) {
             // 自定义的提示语。
             AndPermission.defaultSettingDialog(this, REQUEST_CODE_SETTING)
                     .setTitle("权限申请失败")
-                    .setMessage("我们需要的一些权限被您拒绝或者系统发生错误申请失败，请您到设置页面手动授权，否则功能无法正常使用！")
+                    .setMessage("我们需要的SD卡权限以便导出文件，请您到设置页面手动授权，否则功能无法正常使用！")
                     .setPositiveButton("好，去设置")
                     .show();
+        }
+    }
+
+    private class ExportAsyncTask extends AsyncTask<Integer, Integer, List<AppVersionMember>> {
+
+        @Override
+        protected List<AppVersionMember> doInBackground(Integer... integers) {
+            List<AppVersionMember> list = AppInfoUtils.getAppsWithVersionInfo(Utils.getApp());
+            exportAppsVersionInfoToCSV(list);
+            return list;
+        }
+
+        @Override
+        protected void onPostExecute(List<AppVersionMember> appVersionMembers) {
+            super.onPostExecute(appVersionMembers);
+            String resultString = convertAppsVersionInfoToString(appVersionMembers);
+            mResult.setText(resultString);
         }
     }
 }
